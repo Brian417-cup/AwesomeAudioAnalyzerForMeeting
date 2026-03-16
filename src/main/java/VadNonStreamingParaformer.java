@@ -4,121 +4,133 @@
 // for speech recognition.
 
 import com.k2fsa.sherpa.onnx.*;
+
 import java.util.Arrays;
 
+//离线版语音识别
 public class VadNonStreamingParaformer {
-  public static Vad createVad() {
-    // please download ./silero_vad.onnx from
-    // https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models
-    String model = "src/silero_vad.onnx";
-    SileroVadModelConfig sileroVad =
-        SileroVadModelConfig.builder()
-            .setModel(model)
-            .setThreshold(0.5f)
-            .setMinSilenceDuration(0.25f)
-            .setMinSpeechDuration(0.5f)
-            .setWindowSize(512)
-            .setMaxSpeechDuration(5.0f)
-            .build();
+    public static Vad createVad() {
+        // please download ./silero_vad.onnx from
+        // https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models
+        String model = "src/silero_vad.onnx";
+        SileroVadModelConfig sileroVad =
+                SileroVadModelConfig.builder()
+                        .setModel(model)
+                        .setThreshold(0.5f)
+                        .setMinSilenceDuration(0.25f)
+                        .setMinSpeechDuration(0.5f)
+                        .setWindowSize(512)
+                        .setMaxSpeechDuration(5.0f)
+                        .build();
 
-    VadModelConfig config =
-        VadModelConfig.builder()
-            .setSileroVadModelConfig(sileroVad)
-            .setSampleRate(16000)
-            .setNumThreads(1)
-            .setDebug(true)
-            .setProvider("cpu")
-            .build();
+        VadModelConfig config =
+                VadModelConfig.builder()
+                        .setSileroVadModelConfig(sileroVad)
+                        .setSampleRate(16000)
+                        .setNumThreads(1)
+                        .setDebug(true)
+                        .setProvider("cpu")
+                        .build();
 
-    return new Vad(config);
-  }
+        return new Vad(config);
+    }
 
-  public static OfflineRecognizer createOfflineRecognizer() {
-    // please refer to
-    // https://k2-fsa.github.io/sherpa/onnx/pretrained_models/offline-paraformer/paraformer-models.html#csukuangfj-sherpa-onnx-paraformer-zh-2023-09-14-chinese-english
-    // to download model files
-    String model = "E:\\java_workspace\\sherpa_onnx\\src\\sherpa-onnx-paraformer-zh-2023-09-14\\model.int8.onnx";
-    String tokens = "E:\\java_workspace\\sherpa_onnx\\src\\sherpa-onnx-paraformer-zh-2023-09-14\\tokens.txt";
+    public static OfflineRecognizer createOfflineRecognizer() {
+        // please refer to
+        // https://k2-fsa.github.io/sherpa/onnx/pretrained_models/offline-paraformer/paraformer-models.html#csukuangfj-sherpa-onnx-paraformer-zh-2023-09-14-chinese-english
+        // to download model files
+        String model = "E:\\java_workspace\\sherpa_onnx\\src\\sherpa-onnx-paraformer-zh-2023-09-14\\model.int8.onnx";
+        String tokens = "E:\\java_workspace\\sherpa_onnx\\src\\sherpa-onnx-paraformer-zh-2023-09-14\\tokens.txt";
+        String hotwords_file = "E:\\java_workspace\\sherpa_onnx\\src\\sherpa-onnx-paraformer-zh-2023-09-14\\tokens.txt";
 
-    OfflineParaformerModelConfig paraformer =
-        OfflineParaformerModelConfig.builder().setModel(model).build();
 
-    OfflineModelConfig modelConfig =
-        OfflineModelConfig.builder()
-            .setParaformer(paraformer)
-            .setTokens(tokens)
-            .setNumThreads(1)
-            .setDebug(true)
-            .build();
+        OfflineParaformerModelConfig paraformer =
+                OfflineParaformerModelConfig.builder().setModel(model).build();
 
-    OfflineRecognizerConfig config =
-        OfflineRecognizerConfig.builder()
-            .setOfflineModelConfig(modelConfig)
-            .setDecodingMethod("greedy_search")
-            .build();
+        OfflineModelConfig modelConfig =
+                OfflineModelConfig.builder()
+                        .setParaformer(paraformer)
+                        .setTokens(tokens)
+                        .setNumThreads(1)
+                        .setDebug(true)
+                        .build();
 
-    return new OfflineRecognizer(config);
-  }
+//        OfflineRecognizerConfig config =
+//                OfflineRecognizerConfig.builder()
+//                        .setOfflineModelConfig(modelConfig)
+//                        .setDecodingMethod("modified_beam_search")
+//                        .setHotwordsFile(hotwords_file)
+//                        .setHotwordsScore(2.0f)
+//                        .build();
 
-  public static void main(String[] args) {
+        OfflineRecognizerConfig config =
+                OfflineRecognizerConfig.builder()
+                        .setOfflineModelConfig(modelConfig)
+                        .setDecodingMethod("greedy_search")
+                        .build();
 
-    Vad vad = createVad();
-    OfflineRecognizer recognizer = createOfflineRecognizer();
+        return new OfflineRecognizer(config);
+    }
 
-    // You can download the test file from
-    // https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models
-    String testWaveFilename = "src/lei-jun-test.wav";
-    WaveReader reader = new WaveReader(testWaveFilename);
+    public static void main(String[] args) {
 
-    int numSamples = reader.getSamples().length;
-    int numIter = numSamples / 512;
+        Vad vad = createVad();
+        OfflineRecognizer recognizer = createOfflineRecognizer();
 
-    for (int i = 0; i != numIter; ++i) {
-      int start = i * 512;
-      int end = start + 512;
-      float[] samples = Arrays.copyOfRange(reader.getSamples(), start, end);
-      vad.acceptWaveform(samples);
-      if (vad.isSpeechDetected()) {
-        while (!vad.empty()) {
-          SpeechSegment segment = vad.front();
-          float startTime = segment.getStart() / 16000.0f;
-          float duration = segment.getSamples().length / 16000.0f;
+        // You can download the test file from
+        // https://github.com/k2-fsa/sherpa-onnx/releases/tag/asr-models
+        String testWaveFilename = "src/lei-jun-test.wav";
+        WaveReader reader = new WaveReader(testWaveFilename);
 
-          OfflineStream stream = recognizer.createStream();
-          stream.acceptWaveform(segment.getSamples(), 16000);
-          recognizer.decode(stream);
-          String text = recognizer.getResult(stream).getText();
-          stream.release();
+        int numSamples = reader.getSamples().length;
+        int numIter = numSamples / 512;
 
-          if (!text.isEmpty()) {
-            System.out.printf("%.3f--%.3f: %s\n", startTime, startTime + duration, text);
-          }
+        for (int i = 0; i != numIter; ++i) {
+            int start = i * 512;
+            int end = start + 512;
+            float[] samples = Arrays.copyOfRange(reader.getSamples(), start, end);
+            vad.acceptWaveform(samples);
+            if (vad.isSpeechDetected()) {
+                while (!vad.empty()) {
+                    SpeechSegment segment = vad.front();
+                    float startTime = segment.getStart() / 16000.0f;
+                    float duration = segment.getSamples().length / 16000.0f;
 
-          vad.pop();
+                    OfflineStream stream = recognizer.createStream();
+                    stream.acceptWaveform(segment.getSamples(), 16000);
+                    recognizer.decode(stream);
+                    String text = recognizer.getResult(stream).getText();
+                    stream.release();
+
+                    if (!text.isEmpty()) {
+                        System.out.printf("%.3f--%.3f: %s\n", startTime, startTime + duration, text);
+                    }
+
+                    vad.pop();
+                }
+            }
         }
-      }
+
+        vad.flush();
+        while (!vad.empty()) {
+            SpeechSegment segment = vad.front();
+            float startTime = segment.getStart() / 16000.0f;
+            float duration = segment.getSamples().length / 16000.0f;
+
+            OfflineStream stream = recognizer.createStream();
+            stream.acceptWaveform(segment.getSamples(), 16000);
+            recognizer.decode(stream);
+            String text = recognizer.getResult(stream).getText();
+            stream.release();
+
+            if (!text.isEmpty()) {
+                System.out.printf("%.3f--%.3f: %s\n", startTime, startTime + duration, text);
+            }
+
+            vad.pop();
+        }
+
+        vad.release();
+        recognizer.release();
     }
-
-    vad.flush();
-    while (!vad.empty()) {
-      SpeechSegment segment = vad.front();
-      float startTime = segment.getStart() / 16000.0f;
-      float duration = segment.getSamples().length / 16000.0f;
-
-      OfflineStream stream = recognizer.createStream();
-      stream.acceptWaveform(segment.getSamples(), 16000);
-      recognizer.decode(stream);
-      String text = recognizer.getResult(stream).getText();
-      stream.release();
-
-      if (!text.isEmpty()) {
-        System.out.printf("%.3f--%.3f: %s\n", startTime, startTime + duration, text);
-      }
-
-      vad.pop();
-    }
-
-    vad.release();
-    recognizer.release();
-  }
 }
