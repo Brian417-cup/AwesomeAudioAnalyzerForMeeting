@@ -13,3 +13,16 @@
 DS_Store
 Thumbs.db
 out/
+out_tmp
+
+temp_audio_workspace
+.codex_sources.txt
+.codex_sources_java8.txt
+
+# 模型文件较大，不进入普通 Git 仓库；通过 GitHub Releases 分发模型资源包。
+models/**
+!models/
+!models/README.md
+!models/.gitkeep
+AwesomeAudioAnalyzerForMetting-models.zip
+AwesomeAudioAnalyzerForMetting.jar

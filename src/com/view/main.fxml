@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import com.controller.AudioCutterController?>
+<?import com.gui.WaveformCanvas?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import com.gui.WaveformCanvas?>
-<?import com.controller.AudioCutterController?>
 
 <VBox spacing="15.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="com.controller.AudioPlayerController" style="-fx-padding: 20;">
 
-    <!-- 标题区域 -->
     <Label text="音频处理工具" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;"/>
 
-    <!-- 文件信息区域 -->
     <HBox spacing="10.0" alignment="CENTER_LEFT">
-        <Button fx:id="openBtn" text="📁 打开音频文件" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-size: 14px;"/>
+        <Button fx:id="openBtn" text="打开音频文件" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-size: 14px;"/>
         <TextField fx:id="filePathField" editable="false" promptText="未选择文件" HBox.hgrow="ALWAYS"
                    style="-fx-background-color: #f8f9fa; -fx-border-color: #dee2e6; -fx-border-radius: 4; -fx-background-radius: 4; -fx-font-size: 13px;">
             <contextMenu>
@@ -26,30 +24,31 @@
         </TextField>
     </HBox>
 
-    <!-- 播放控制区域 -->
-    <TitledPane text="🎵 音频播放控制" expanded="true" style="-fx-border-color: #bdc3c7; -fx-font-size: 16px;">
+    <TitledPane text="音频播放控制" expanded="true" style="-fx-border-color: #bdc3c7; -fx-font-size: 16px;">
         <VBox spacing="12.0">
             <WaveformCanvas fx:id="waveformCanvas" width="760" height="150"/>
             <Slider fx:id="progressSlider" showTickMarks="false" showTickLabels="false" prefWidth="760"/>
             <Label fx:id="timeLabel" text="00:00 / 00:00" style="-fx-alignment: center; -fx-font-family: monospace; -fx-font-size: 14px;"/>
 
             <HBox spacing="12.0" alignment="CENTER">
-                <Button fx:id="playBtn" text="▶ 播放" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 8 16; -fx-font-size: 14px;"/>
-                <Button fx:id="pauseBtn" text="⏸ 暂停" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-padding: 8 16; -fx-font-size: 14px;"/>
-                <Button fx:id="backwardBtn" text="⏪ 快退" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-padding: 8 16; -fx-font-size: 14px;"/>
-                <Button fx:id="forwardBtn" text="⏩ 快进" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-padding: 8 16; -fx-font-size: 14px;"/>
+                <Button fx:id="playBtn" text="播放" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 8 16; -fx-font-size: 14px;"/>
+                <Button fx:id="pauseBtn" text="暂停" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-padding: 8 16; -fx-font-size: 14px;"/>
+                <Button fx:id="backwardBtn" text="快退" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-padding: 8 16; -fx-font-size: 14px;"/>
+                <Button fx:id="forwardBtn" text="快进" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-padding: 8 16; -fx-font-size: 14px;"/>
+                <Label text="跳转到" style="-fx-text-fill: #495057; -fx-font-size: 12px;"/>
+                <TextField fx:id="jumpTimeField" promptText="03:15" prefWidth="90"
+                           style="-fx-background-color: white; -fx-border-color: #ced4da; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 7 8; -fx-font-size: 13px;"/>
+                <Button fx:id="jumpTimeBtn" text="定位" style="-fx-background-color: #5d6d7e; -fx-text-fill: white; -fx-padding: 8 14; -fx-font-size: 13px;"/>
             </HBox>
         </VBox>
     </TitledPane>
 
-    <!-- 剪辑控制区域 -->
-    <TitledPane text="✂️ 音频剪辑工具" expanded="true" style="-fx-border-color: #bdc3c7; -fx-font-size: 16px;">
+    <TitledPane text="音频剪切工具" expanded="true" style="-fx-border-color: #bdc3c7; -fx-font-size: 16px;">
         <VBox spacing="12.0">
             <AudioCutterController fx:id="audioCutterController"/>
         </VBox>
     </TitledPane>
 
-    <!-- 状态栏 -->
     <HBox spacing="10.0" style="-fx-border-color: #bdc3c7; -fx-border-width: 1 0 0 0; -fx-padding: 12 0 0 0; -fx-min-height: 30;">
         <Label fx:id="statusLabel" text="就绪" style="-fx-text-fill: #7f8c8d; -fx-font-size: 13px;"/>
         <Pane HBox.hgrow="ALWAYS"/>

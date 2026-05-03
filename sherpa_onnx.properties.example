@@ -1,0 +1,45 @@
+# sherpa_onnx 纯 Java 调用配置示例
+# 模型资源从 GitHub Releases 下载并解压到 models 目录后，通常无需修改模型路径
+
+# -------- 通用设置 --------
+common.numThreads=2
+common.sampleRate=16000
+common.debug=false
+common.provider=cpu
+
+# -------- 音频输入 --------
+audio.autoConvertWithFfmpeg=true
+audio.ffmpegPath=src/com/resource/ffmpeg.exe
+audio.inputFormats=wav,mp3,m4a,aac,flac,ogg,wma,amr
+audio.tempDirectory=temp_audio_workspace
+
+# -------- Paraformer 非热词识别 --------
+paraformer.model=models/paraformer-zh/model.int8.onnx
+paraformer.tokens=models/paraformer-zh/tokens.txt
+paraformer.decodingMethod=greedy_search
+
+# -------- Conformer 热词识别 --------
+conformer.encoder=models/conformer-zh-stateless2/encoder-epoch-99-avg-1.onnx
+conformer.decoder=models/conformer-zh-stateless2/decoder-epoch-99-avg-1.onnx
+conformer.joiner=models/conformer-zh-stateless2/joiner-epoch-99-avg-1.onnx
+conformer.tokens=models/conformer-zh-stateless2/tokens.txt
+conformer.modelingUnit=cjkchar
+conformer.decodingMethod=modified_beam_search
+conformer.maxActivePaths=20
+conformer.hotwordsScore=30.0
+
+# -------- VAD 语音切分 --------
+vad.sileroModel=models/vad/silero_vad.onnx
+vad.windowSize=512
+vad.threshold=0.55
+vad.minSilenceDuration=0.35
+vad.minSpeechDuration=0.6
+vad.maxSpeechDuration=5.0
+
+# -------- 说话人分离与声纹 --------
+speaker.segmentationModel=models/speaker/pyannote-segmentation-3-0.onnx
+speaker.embeddingModel=models/speaker/3dspeaker_speech_eres2net_base_sv_zh-cn_3dspeaker_16k.onnx
+speaker.clusteringThreshold=0.5
+speaker.minDurationOn=0.3
+speaker.minDurationOff=0.6
+speaker.matchThreshold=0.82

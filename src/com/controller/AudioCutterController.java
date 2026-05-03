@@ -1,30 +1,39 @@
 package com.controller;
 
 import com.gui.WaveformCanvas;
+import com.util.AudioCutter;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import com.util.AudioCutter;
 
 import java.io.File;
 
 public class AudioCutterController extends HBox {
+
+    public interface ExportSuccessListener {
+        void onExportSuccess(File outputFile, double startTime, double endTime);
+    }
+
     private WaveformCanvas waveformCanvas;
     private Label selectionInfoLabel;
     private Button setStartBtn;
     private Button setEndBtn;
     private Button exportBtn;
-    private Button jumpToStartBtn;  // 新增：跳转到起点按钮
-    private Button jumpToEndBtn;    // 新增：跳转到终点按钮
+    private Button jumpToStartBtn;
+    private Button jumpToEndBtn;
     private Stage primaryStage;
     private File currentAudioFile;
-    private double totalDurationSeconds;
     private double cutStartTime = -1.0;
     private double cutEndTime = -1.0;
+    private double audioDurationSeconds = 0.0;
     private AudioPlayerController audioPlayerController;
+    private ExportSuccessListener exportSuccessListener;
+    private boolean syncingWaveformSelection = false;
 
     public AudioCutterController() {
         initializeComponents();
@@ -34,197 +43,244 @@ public class AudioCutterController extends HBox {
     private void initializeComponents() {
         setSpacing(12);
         setPadding(new Insets(12));
-        setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #dee2e6; -fx-border-radius: 5; -fx-background-radius: 5;");
-
-        // 设置最小尺寸和弹性布局
+        setStyle("-fx-background-color: #f8f9fa; -fx-border-color: #dee2e6; -fx-border-radius: 6; -fx-background-radius: 6;");
         setMinHeight(65);
-        setPrefWidth(USE_COMPUTED_SIZE);
         setMaxWidth(Double.MAX_VALUE);
 
-        Label titleLabel = new Label("📋 剪辑设置:");
-        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #495057; -fx-font-size: 15px;");
+        Label titleLabel = new Label("剪切设置:");
+        titleLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: #495057; -fx-font-size: 14px;");
 
-        selectionInfoLabel = new Label("❌ 未设置剪辑点");
-        selectionInfoLabel.setMinWidth(220);
+        selectionInfoLabel = new Label("未设置剪切区间");
+        selectionInfoLabel.setMinWidth(280);
         selectionInfoLabel.setMaxWidth(Double.MAX_VALUE);
-        selectionInfoLabel.setStyle("-fx-background-color: #f8d7da; -fx-text-fill: #721c24; -fx-padding: 6; -fx-border-radius: 3; -fx-font-size: 13px;");
+        selectionInfoLabel.setStyle("-fx-background-color: #f8d7da; -fx-text-fill: #721c24; -fx-padding: 6; -fx-border-radius: 4; -fx-font-size: 13px;");
 
-        setStartBtn = new Button("📍 设置起点");
-        setStartBtn.setStyle("-fx-background-color: #007bff; -fx-text-fill: white; -fx-padding: 10 18; -fx-font-size: 13px;");
+        setStartBtn = new Button("设置起点");
+        setStartBtn.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 8 14; -fx-font-size: 12px;");
 
-        setEndBtn = new Button("🏁 设置终点");
-        setEndBtn.setStyle("-fx-background-color: #28a745; -fx-text-fill: white; -fx-padding: 10 18; -fx-font-size: 13px;");
+        setEndBtn = new Button("设置终点");
+        setEndBtn.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 8 14; -fx-font-size: 12px;");
 
-        // 跳转按钮
-        jumpToStartBtn = new Button("⏮ 跳转起点");
-        jumpToStartBtn.setStyle("-fx-background-color: #6c757d; -fx-text-fill: white; -fx-padding: 8 15; -fx-font-size: 12px;");
+        jumpToStartBtn = new Button("跳到起点");
+        jumpToStartBtn.setStyle("-fx-background-color: #6c757d; -fx-text-fill: white; -fx-padding: 8 14; -fx-font-size: 12px;");
         jumpToStartBtn.setDisable(true);
 
-        jumpToEndBtn = new Button("⏭ 跳转终点");
-        jumpToEndBtn.setStyle("-fx-background-color: #6c757d; -fx-text-fill: white; -fx-padding: 8 15; -fx-font-size: 12px;");
+        jumpToEndBtn = new Button("跳到终点");
+        jumpToEndBtn.setStyle("-fx-background-color: #6c757d; -fx-text-fill: white; -fx-padding: 8 14; -fx-font-size: 12px;");
         jumpToEndBtn.setDisable(true);
 
-        exportBtn = new Button("💾 导出剪辑");
-        exportBtn.setStyle("-fx-background-color: #ffc107; -fx-text-fill: #212529; -fx-padding: 10 18; -fx-font-size: 13px;");
+        exportBtn = new Button("导出剪切片段");
+        exportBtn.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white; -fx-padding: 8 14; -fx-font-size: 12px;");
         exportBtn.setDisable(true);
 
-        getChildren().addAll(
-                titleLabel,
-                selectionInfoLabel,
-                setStartBtn,
-                setEndBtn,
-                jumpToStartBtn,
-                jumpToEndBtn,
-                exportBtn
-        );
+        getChildren().addAll(titleLabel, selectionInfoLabel, setStartBtn, setEndBtn, jumpToStartBtn, jumpToEndBtn, exportBtn);
     }
+
     private void setupEventHandlers() {
         setStartBtn.setOnAction(e -> setCutStartPoint());
         setEndBtn.setOnAction(e -> setCutEndPoint());
         exportBtn.setOnAction(e -> exportCutAudio());
-
-        // 新增跳转事件处理
         jumpToStartBtn.setOnAction(e -> jumpToStartTime());
         jumpToEndBtn.setOnAction(e -> jumpToEndTime());
     }
 
-    // 设置播放器控制器引用
     public void setAudioPlayerController(AudioPlayerController controller) {
         this.audioPlayerController = controller;
     }
 
-    // 设置关联的波形画布
     public void setWaveformCanvas(WaveformCanvas canvas) {
         this.waveformCanvas = canvas;
+        if (this.waveformCanvas != null) {
+            this.waveformCanvas.setSelectionChangeListener(this::onWaveformSelectionChanged);
+        }
     }
 
-    // 设置主窗口引用
     public void setPrimaryStage(Stage stage) {
         this.primaryStage = stage;
     }
 
-    // 设置当前音频文件和时长
-    public void setAudioInfo(File audioFile, double durationSeconds) {
-        this.currentAudioFile = audioFile;
-        this.totalDurationSeconds = durationSeconds;
-        this.cutStartTime = -1.0;
-        this.cutEndTime = -1.0;
-        updateJumpButtonsState();  // 更新跳转按钮状态
-        updateSelectionInfo();
+    public void setExportSuccessListener(ExportSuccessListener listener) {
+        this.exportSuccessListener = listener;
     }
 
-    // 设置剪辑起点
+    public void setAudioInfo(File audioFile, double durationSeconds) {
+        this.currentAudioFile = audioFile;
+        this.audioDurationSeconds = Math.max(0.0, durationSeconds);
+        this.cutStartTime = -1.0;
+        this.cutEndTime = -1.0;
+        updateJumpButtonsState();
+        updateSelectionInfo();
+        if (waveformCanvas != null) {
+            syncingWaveformSelection = true;
+            try {
+                waveformCanvas.clearSelection();
+            } finally {
+                syncingWaveformSelection = false;
+            }
+        }
+    }
+
+    private void onWaveformSelectionChanged(double startRatio, double endRatio) {
+        if (syncingWaveformSelection) {
+            return;
+        }
+
+        if (audioDurationSeconds <= 0 || startRatio < 0 || endRatio < 0) {
+            this.cutStartTime = -1.0;
+            this.cutEndTime = -1.0;
+            updateSelectionInfo();
+            updateJumpButtonsState();
+            return;
+        }
+
+        double start = Math.min(startRatio, endRatio) * audioDurationSeconds;
+        double end = Math.max(startRatio, endRatio) * audioDurationSeconds;
+        setCutRangeInternal(start, end, false);
+    }
+
     private void setCutStartPoint() {
         if (audioPlayerController != null) {
             cutStartTime = audioPlayerController.getCurrentPlaybackTime();
+            normalizeRangeIfNeeded();
+            syncWaveformFromRange();
             updateSelectionInfo();
             updateJumpButtonsState();
         }
     }
 
-    // 设置剪辑终点
     private void setCutEndPoint() {
         if (audioPlayerController != null) {
             cutEndTime = audioPlayerController.getCurrentPlaybackTime();
+            normalizeRangeIfNeeded();
+            syncWaveformFromRange();
             updateSelectionInfo();
             updateJumpButtonsState();
         }
     }
 
-    // 跳转到起点时间
+    private void normalizeRangeIfNeeded() {
+        if (cutStartTime >= 0 && cutEndTime >= 0 && cutStartTime > cutEndTime) {
+            double tmp = cutStartTime;
+            cutStartTime = cutEndTime;
+            cutEndTime = tmp;
+        }
+    }
+
     private void jumpToStartTime() {
         if (audioPlayerController != null && cutStartTime >= 0) {
             audioPlayerController.jumpToTime(cutStartTime);
         }
     }
 
-    // 跳转到终点时间
     private void jumpToEndTime() {
         if (audioPlayerController != null && cutEndTime >= 0) {
             audioPlayerController.jumpToTime(cutEndTime);
         }
     }
 
-    // 公共方法：设置剪辑起点（供外部调用）
     public void setCutStartPoint(double time) {
-        this.cutStartTime = time;
+        this.cutStartTime = Math.max(0.0, time);
+        normalizeRangeIfNeeded();
+        syncWaveformFromRange();
         updateSelectionInfo();
         updateJumpButtonsState();
     }
 
-    // 公共方法：设置剪辑终点（供外部调用）
     public void setCutEndPoint(double time) {
-        this.cutEndTime = time;
+        this.cutEndTime = Math.max(0.0, time);
+        normalizeRangeIfNeeded();
+        syncWaveformFromRange();
         updateSelectionInfo();
         updateJumpButtonsState();
     }
 
-    // 更新跳转按钮状态
+    public void setCutRange(double startTime, double endTime) {
+        setCutRangeInternal(startTime, endTime, true);
+    }
+
+    private void setCutRangeInternal(double startTime, double endTime, boolean syncWaveform) {
+        if (startTime < 0 || endTime < 0) {
+            this.cutStartTime = -1.0;
+            this.cutEndTime = -1.0;
+        } else {
+            this.cutStartTime = Math.min(startTime, endTime);
+            this.cutEndTime = Math.max(startTime, endTime);
+        }
+
+        if (syncWaveform) {
+            syncWaveformFromRange();
+        }
+
+        updateSelectionInfo();
+        updateJumpButtonsState();
+    }
+
+    private void syncWaveformFromRange() {
+        if (waveformCanvas == null || audioDurationSeconds <= 0) {
+            return;
+        }
+
+        syncingWaveformSelection = true;
+        try {
+            if (cutStartTime >= 0 && cutEndTime >= 0 && cutEndTime > cutStartTime) {
+                waveformCanvas.setSelectionRatio(cutStartTime / audioDurationSeconds, cutEndTime / audioDurationSeconds);
+            } else {
+                waveformCanvas.clearSelection();
+            }
+        } finally {
+            syncingWaveformSelection = false;
+        }
+    }
+
     private void updateJumpButtonsState() {
         jumpToStartBtn.setDisable(cutStartTime < 0);
         jumpToEndBtn.setDisable(cutEndTime < 0);
-
-        // 更新按钮样式和字体
-        if (cutStartTime >= 0) {
-            jumpToStartBtn.setStyle("-fx-background-color: #17a2b8; -fx-text-fill: white; -fx-padding: 8 15; -fx-font-size: 12px;");
-        } else {
-            jumpToStartBtn.setStyle("-fx-background-color: #6c757d; -fx-text-fill: white; -fx-padding: 8 15; -fx-font-size: 12px;");
-        }
-
-        if (cutEndTime >= 0) {
-            jumpToEndBtn.setStyle("-fx-background-color: #17a2b8; -fx-text-fill: white; -fx-padding: 8 15; -fx-font-size: 12px;");
-        } else {
-            jumpToEndBtn.setStyle("-fx-background-color: #6c757d; -fx-text-fill: white; -fx-padding: 8 15; -fx-font-size: 12px;");
-        }
+        jumpToStartBtn.setStyle("-fx-background-color: " + (cutStartTime >= 0 ? "#17a2b8" : "#6c757d") + "; -fx-text-fill: white; -fx-padding: 8 14; -fx-font-size: 12px;");
+        jumpToEndBtn.setStyle("-fx-background-color: " + (cutEndTime >= 0 ? "#17a2b8" : "#6c757d") + "; -fx-text-fill: white; -fx-padding: 8 14; -fx-font-size: 12px;");
     }
-    // 公共方法：获取当前剪辑范围
+
     public double[] getCutRange() {
         return new double[]{cutStartTime, cutEndTime};
     }
 
-    // 公共方法：检查是否可以导出
+    public double getCutStartTime() {
+        return cutStartTime;
+    }
+
+    public double getCutEndTime() {
+        return cutEndTime;
+    }
+
     public boolean canExport() {
-        return cutStartTime >= 0 && cutEndTime >= 0 &&
-                cutEndTime > cutStartTime &&
-                currentAudioFile != null;
+        return cutStartTime >= 0 && cutEndTime >= 0 && cutEndTime > cutStartTime && currentAudioFile != null;
     }
 
     private void updateSelectionInfo() {
         if (cutStartTime < 0 && cutEndTime < 0) {
-            selectionInfoLabel.setText("❌ 未设置剪辑点");
-            selectionInfoLabel.setStyle("-fx-background-color: #f8d7da; -fx-text-fill: #721c24; -fx-padding: 5; -fx-border-radius: 3;");
+            selectionInfoLabel.setText("未设置剪切区间");
+            selectionInfoLabel.setStyle("-fx-background-color: #f8d7da; -fx-text-fill: #721c24; -fx-padding: 6; -fx-border-radius: 4;");
             exportBtn.setDisable(true);
             return;
         }
 
         StringBuilder info = new StringBuilder();
-        if (cutStartTime >= 0) {
-            info.append("🟢 起点: ").append(formatTime(cutStartTime));
-        } else {
-            info.append("🔴 起点: 未设置");
-        }
-        info.append(" │ ");
-        if (cutEndTime >= 0) {
-            info.append("🔵 终点: ").append(formatTime(cutEndTime));
-        } else {
-            info.append("🔴 终点: 未设置");
-        }
+        info.append(cutStartTime >= 0 ? "起点: " + formatTime(cutStartTime) : "起点: 未设置");
+        info.append("  |  ");
+        info.append(cutEndTime >= 0 ? "终点: " + formatTime(cutEndTime) : "终点: 未设置");
 
         if (cutStartTime >= 0 && cutEndTime >= 0) {
-            double duration = Math.abs(cutEndTime - cutStartTime);
-            info.append(" ⏱ 时长: ").append(formatTime(duration));
+            info.append("  |  时长: ").append(formatTime(Math.max(0, cutEndTime - cutStartTime)));
         }
 
         selectionInfoLabel.setText(info.toString());
-        selectionInfoLabel.setStyle("-fx-background-color: #d4edda; -fx-text-fill: #155724; -fx-padding: 5; -fx-border-radius: 3;");
-        updateExportButtonState();
-    }
 
-    private void updateExportButtonState() {
-        boolean canExport = cutStartTime >= 0 && cutEndTime >= 0 &&
-                cutEndTime > cutStartTime &&
-                currentAudioFile != null;
-        exportBtn.setDisable(!canExport);
+        if (canExport()) {
+            selectionInfoLabel.setStyle("-fx-background-color: #d4edda; -fx-text-fill: #155724; -fx-padding: 6; -fx-border-radius: 4;");
+        } else {
+            selectionInfoLabel.setStyle("-fx-background-color: #fff3cd; -fx-text-fill: #856404; -fx-padding: 6; -fx-border-radius: 4;");
+        }
+
+        exportBtn.setDisable(!canExport());
     }
 
     private void exportCutAudio() {
@@ -232,12 +288,10 @@ public class AudioCutterController extends HBox {
             showError("导出错误", "请先加载音频文件");
             return;
         }
-
         if (cutStartTime < 0 || cutEndTime < 0) {
-            showError("导出错误", "请先设置剪辑起点和终点");
+            showError("导出错误", "请先设置起点和终点");
             return;
         }
-
         if (cutEndTime <= cutStartTime) {
             showError("导出错误", "终点必须晚于起点");
             return;
@@ -245,39 +299,42 @@ public class AudioCutterController extends HBox {
 
         try {
             FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("导出剪辑音频");
-            fileChooser.getExtensionFilters().add(
-                    new FileChooser.ExtensionFilter("WAV Files", "*.wav")
-            );
+            fileChooser.setTitle("导出剪切音频");
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("WAV 文件", "*.wav"));
 
             String originalName = currentAudioFile.getName();
-            String nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.'));
+            String nameWithoutExt = originalName.contains(".")
+                    ? originalName.substring(0, originalName.lastIndexOf('.'))
+                    : originalName;
             String startTimeStr = formatTime(cutStartTime).replace(":", "");
             String endTimeStr = formatTime(cutEndTime).replace(":", "");
-            fileChooser.setInitialFileName(nameWithoutExt + "_剪辑_" + startTimeStr + "_" + endTimeStr + ".wav");
+            fileChooser.setInitialFileName(nameWithoutExt + "_剪切_" + startTimeStr + "_" + endTimeStr + ".wav");
 
             File outputFile = fileChooser.showSaveDialog(primaryStage);
-
-            if (outputFile != null) {
-                AudioCutter.cut(currentAudioFile, outputFile, cutStartTime, cutEndTime);
-
-                javafx.application.Platform.runLater(() -> {
-                    javafx.scene.control.Alert successAlert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
-                    successAlert.setTitle("🎉 导出完成");
-                    successAlert.setHeaderText(null);
-                    successAlert.setContentText(String.format(
-                            "音频剪辑成功!\n时间范围: %s - %s\n时长: %s\n保存位置: %s",
-                            formatTime(cutStartTime),
-                            formatTime(cutEndTime),
-                            formatTime(cutEndTime - cutStartTime),
-                            outputFile.getAbsolutePath()
-                    ));
-                    successAlert.showAndWait();
-                });
+            if (outputFile == null) {
+                return;
             }
+
+            AudioCutter.cut(currentAudioFile, outputFile, cutStartTime, cutEndTime);
+            if (exportSuccessListener != null) {
+                exportSuccessListener.onExportSuccess(outputFile, cutStartTime, cutEndTime);
+            }
+
+            Platform.runLater(() -> {
+                Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                successAlert.setTitle("导出完成");
+                successAlert.setHeaderText(null);
+                successAlert.setContentText(String.format(
+                        "剪切成功\n时间范围: %s - %s\n时长: %s\n保存位置: %s",
+                        formatTime(cutStartTime),
+                        formatTime(cutEndTime),
+                        formatTime(cutEndTime - cutStartTime),
+                        outputFile.getAbsolutePath()
+                ));
+                successAlert.showAndWait();
+            });
         } catch (Exception e) {
-            e.printStackTrace();
-            showError("导出失败", "剪辑过程中发生错误: " + e.getMessage());
+            showError("导出失败", "剪切过程中发生错误: " + e.getMessage());
         }
     }
 
@@ -289,8 +346,8 @@ public class AudioCutterController extends HBox {
     }
 
     private void showError(String title, String message) {
-        javafx.application.Platform.runLater(() -> {
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
+        Platform.runLater(() -> {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setTitle(title);
             alert.setHeaderText(null);
             alert.setContentText(message);

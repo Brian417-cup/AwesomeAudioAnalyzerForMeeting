@@ -1,6 +1,6 @@
 package com.gui;
 
-// 选择变化监听器接口
+// 波形选区变更监听器
 public interface SelectionChangeListener {
     void onSelectionChanged(double startRatio, double endRatio);
 }
