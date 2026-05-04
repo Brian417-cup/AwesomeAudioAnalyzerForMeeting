@@ -1,4 +1,4 @@
-# AwesomeAudioAnalyzerForMetting
+# AwesomeAudioAnalyzerForMeeting
 
 [![Java](https://img.shields.io/badge/Java-8-orange?logo=java)](https://www.oracle.com/java/)
 [![JavaFX](https://img.shields.io/badge/UI-JavaFX-blue)](https://openjfx.io/)
@@ -144,13 +144,13 @@
 
 由于模型文件体积较大，`models` 目录下的模型资源不直接放入普通 GitHub 源码仓库。
 
-当前仓库保留代码、配置、依赖和模型目录说明；完整模型文件请从  [GitHub Releases 页面](https://github.com/Brian417-cup/AwesomeAudioAnalyzerForMetting/releases/tag/v1.0.0)
+当前仓库保留代码、配置、依赖和模型目录说明；完整模型文件请从  [GitHub Releases 页面](https://github.com/Brian417-cup/AwesomeAudioAnalyzerForMeeting/releases/tag/v1.0.0)
 下载模型资源包，并解压到项目根目录下的 `models` 文件夹中。
 
 Release 附件命名为：
 
 ```text
-AwesomeAudioAnalyzerForMetting-models.zip
+AwesomeAudioAnalyzerForMeeting-models.zip
 ```
 
 该压缩包中应直接包含 `models` 文件夹，或者解压后能够在当前目录得到 `models` 文件夹。
@@ -189,9 +189,9 @@ models
 
 ### Windows 平台
 
-1. 从[指定链接](https://github.com/Brian417-cup/AwesomeAudioAnalyzerForMetting/releases/tag/v1.0.0)
-   下载 `AwesomeAudioAnalyzerForMetting.jar`
-   和 `AwesomeAudioAnalyzerForMetting-models.zip`。
+1. 从[指定链接](https://github.com/Brian417-cup/AwesomeAudioAnalyzerForMeeting/releases/tag/v1.0.0)
+   下载 `AwesomeAudioAnalyzerForMeeting.jar`
+   和 `AwesomeAudioAnalyzerForMeeting-models.zip`。
 
 2.将模型资源包解压到程序同级目录下的 `models` 文件夹。
 
@@ -199,9 +199,9 @@ models
 4. 确认运行目录结构完整：
 
 ```text
-AwesomeAudioAnalyzerForMetting
+AwesomeAudioAnalyzerForMeeting
 │
-├── AwesomeAudioAnalyzerForMetting.jar
+├── AwesomeAudioAnalyzerForMeeting.jar
 ├── lib
 ├── models
 ├── src/com/resource/ffmpeg.exe
@@ -211,17 +211,17 @@ AwesomeAudioAnalyzerForMetting
 6. 在 Windows `cmd` 中进入软件目录：
 
 ```bat
-cd /d <AwesomeAudioAnalyzerForMetting完整路径>
+cd /d <AwesomeAudioAnalyzerForMeeting完整路径>
 ```
 
 7. 终端执行：
 
 ```bat
 chcp 65001
-java -Dfile.encoding=UTF-8 -jar AwesomeAudioAnalyzerForMetting.jar
+java -Dfile.encoding=UTF-8 -jar AwesomeAudioAnalyzerForMeeting.jar
 ```
 
-> 💡 当前打包方式已经将主要 Java 依赖合并进 `AwesomeAudioAnalyzerForMetting.jar`，因此普通用户优先使用 `java -jar` 启动。
+> 💡 当前打包方式已经将主要 Java 依赖合并进 `AwesomeAudioAnalyzerForMeeting.jar`，因此普通用户优先使用 `java -jar` 启动。
 
 ### 其他平台
 
@@ -411,7 +411,7 @@ temp_audio_workspace
 
 ### 🔍 找不到模型文件
 
-检查是否已经从 GitHub Releases 下载模型资源包，并确认解压后的 `models` 目录与 `AwesomeAudioAnalyzerForMetting.jar` 位于同级目录。
+检查是否已经从 GitHub Releases 下载模型资源包，并确认解压后的 `models` 目录与 `AwesomeAudioAnalyzerForMeeting.jar` 位于同级目录。
 
 同时确认 `sherpa_onnx.properties` 中的模型路径仍然是项目相对路径，例如：
 
